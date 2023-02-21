@@ -1,0 +1,1 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/sw25a8mcccwq04q9?svg=true)](https://ci.appveyor.com/project/QA-Netology/hw-2-3-2-patterns)
