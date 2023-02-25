@@ -5,13 +5,13 @@ import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import lombok.Value;
 
 import java.util.Locale;
 
 import static io.restassured.RestAssured.given;
 
 public class DataGenerator {
-
     private static final Faker faker = new Faker(new Locale("en"));
     private static final RequestSpecification requestSpec = new RequestSpecBuilder()
             .setBaseUri("http://localhost")
@@ -21,55 +21,47 @@ public class DataGenerator {
             .log(LogDetail.ALL)
             .build();
 
+    @Value
+    public static class RegistrationDto {
+        String login;
+        String password;
+        String status;
+    }
+
+
     private DataGenerator() {
     }
 
-    static void sendQuery(UserInfo userInfo) {
-        // сам запрос
-        given() // "дано"
-                .spec(requestSpec) // указываем, какую спецификацию используем
-                .body(userInfo) // передаём в теле объект, который будет преобразован в JSON
-                .when() // "когда"
-                .post("/api/system/users") // на какой путь, относительно BaseUri отправляем запрос
-                .then() // "тогда ожидаем"
-                .statusCode(200); // код 200 OK
+    public static String getRandomLogin() {
+        return faker.name().username();
+    }
+
+    public static String getRandomPassword() {
+        return faker.internet().password();
     }
 
     public static class Registration {
         private Registration() {
         }
 
-        public static String generateLogin() {
-            return faker.name().username();
+        public static RegistrationDto getUser(String status) {
+            return new RegistrationDto(getRandomLogin(), getRandomPassword(), status);
         }
 
-        public static String generatePassword() {
-            return faker.internet().password();
+        public static RegistrationDto getRegisteredUser(String status) {
+            var registeredUser = getUser(status);
+            sendRequest(registeredUser);
+            return registeredUser;
         }
 
-        public static UserInfo generateValidUser() {
-            UserInfo userInfo = new UserInfo(generateLogin(), generatePassword(), "active");
-            sendQuery(userInfo);
-            return userInfo;
-        }
-
-        public static UserInfo generateBlockedUser() {
-            UserInfo userInfo = new UserInfo(generateLogin(), generatePassword(), "blocked");
-            sendQuery(userInfo);
-            return userInfo;
-        }
-
-        public static UserInfo generateWrongPasswordUser(String status) {
-            String login = generateLogin();
-            sendQuery(new UserInfo(login, generatePassword(), status));
-            return new UserInfo(login, generatePassword(), status);
-        }
-
-        public static UserInfo generateWrongLoginUser(String status) {
-            String password = generatePassword();
-            sendQuery(new UserInfo(generateLogin(), password, status));
-            return new UserInfo(generateLogin(), password, status);
+        public static void sendRequest(RegistrationDto registeredUser) {
+            given()
+                    .spec(requestSpec)
+                    .body(registeredUser)
+                    .when()
+                    .post("/api/system/users")
+                    .then()
+                    .statusCode(200);
         }
     }
 }
-
